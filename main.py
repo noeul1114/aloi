@@ -11,7 +11,6 @@ def main():
     parser.add_argument("-H", "--host", type=str, help="Host address (for client or server)")
     parser.add_argument("-p", "--port", type=int, help="Port number (for client or server)")
     parser.add_argument("-k", "--keyfile", type=str, help="File containing symmetric key")
-    parser.add_argument("-t", "--text", type=str, help="Text to send (client mode only)")
     args = parser.parse_args()
 
     if args.mode == "keygen":
@@ -28,10 +27,10 @@ def main():
         server_thread = threading.Thread(target=start_server, args=(args.host, args.port, args.keyfile))
         server_thread.start()
     elif args.mode == "client":
-        if not args.host or not args.port or not args.keyfile or not args.text:
-            print("Client mode requires -H (host), -p (port), -k (keyfile), and -t (text).")
+        if not args.host or not args.port or not args.keyfile:
+            print("Client mode requires -H (host), -p (port), and -k (keyfile).")
             sys.exit(1)
-        send_message(args.host, args.port, args.text, args.keyfile)
+        send_message(args.host, args.port, args.keyfile)
 
 if __name__ == "__main__":
     main()
