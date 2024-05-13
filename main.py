@@ -1,93 +1,37 @@
 import argparse
-import socket
+import sys
 import threading
-import tkinter as tk
-from tkinter import filedialog
-from cryptography.fernet import Fernet
+from server import start_server
+from client import send_message
+from encryption import generate_key, save_key
 
-# Generate encryption key
-key = Fernet.generate_key()
-cipher_suite = Fernet(key)
-
-print(key)
-
-# Parse CLI arguments
-parser = argparse.ArgumentParser(description='1:1 Encrypted Communication Program')
-parser.add_argument('-s', '--server', action='store_true', help='Run in server mode')
-parser.add_argument('-c', '--client', metavar='IP', help='Run in client mode, requires server IP address')
-parser.add_argument('-d', '--daemon', action='store_true', help='Run in daemon mode')
-parser.add_argument('-g', '--gui', action='store_true', help='Run in GUI mode')
-args = parser.parse_args()
-
-
-# Socket communication functions
-def handle_connection(conn, addr):
-    while True:
-        data = conn.recv(1024)
-        if not data:
-            break
-        decrypted_data = cipher_suite.decrypt(data)
-        print(f"Received data from {addr}: {decrypted_data.decode()}")
-    conn.close()
-
-
-def start_server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('', 12345))
-    server_socket.listen(1)
-    print("Server started. Waiting for connections...")
-    while True:
-        conn, addr = server_socket.accept()
-        print(f"Connected by {addr}")
-        threading.Thread(target=handle_connection, args=(conn, addr)).start()
-
-
-def start_client(ip):
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect((ip, 12345))
-    print(f"Connected to server at {ip}")
-    while True:
-        message = input("Enter message (or 'quit' to exit): ")
-        if message == 'quit':
-            break
-        encrypted_message = cipher_suite.encrypt(message.encode())
-        client_socket.send(encrypted_message)
-    client_socket.close()
-
-
-# GUI functions
-def open_file():
-    file_path = filedialog.askopenfilename()
-    if file_path:
-        with open(file_path, 'rb') as file:
-            data = file.read()
-            encrypted_data = cipher_suite.encrypt(data)
-            # Add logic for sending encrypted data
-            print("File encrypted and sent.")
-
-
-def update_gui():
-    window = tk.Tk()
-    window.title("1:1 Encrypted Communication Program")
-    window.geometry("400x300")
-
-    open_button = tk.Button(window, text="Select File", command=open_file)
-    open_button.pack(pady=20)
-
-    window.mainloop()
-
-
-# Main function
 def main():
-    if args.server:
-        start_server()
-    elif args.client:
-        start_client(args.client)
-    elif args.gui:
-        update_gui()
-    else:
-        print("Invalid arguments. Use -h or --help for usage instructions.")
+    parser = argparse.ArgumentParser(description="1:1 Encrypted Communication Program")
+    parser.add_argument("-m", "--mode", choices=["server", "client", "keygen"], help="Mode of operation")
+    parser.add_argument("-H", "--host", type=str, help="Host address (for client or server)")
+    parser.add_argument("-p", "--port", type=int, help="Port number (for client or server)")
+    parser.add_argument("-k", "--keyfile", type=str, help="File containing symmetric key")
+    parser.add_argument("-t", "--text", type=str, help="Text to send (client mode only)")
+    args = parser.parse_args()
 
+    if args.mode == "keygen":
+        if not args.keyfile:
+            print("Please specify a keyfile with -k or --keyfile.")
+            sys.exit(1)
+        key = generate_key()
+        save_key(key, args.keyfile)
+        print(f"Generated key and saved to {args.keyfile}")
+    elif args.mode == "server":
+        if not args.host or not args.port or not args.keyfile:
+            print("Server mode requires -H (host), -p (port), and -k (keyfile).")
+            sys.exit(1)
+        server_thread = threading.Thread(target=start_server, args=(args.host, args.port, args.keyfile))
+        server_thread.start()
+    elif args.mode == "client":
+        if not args.host or not args.port or not args.keyfile or not args.text:
+            print("Client mode requires -H (host), -p (port), -k (keyfile), and -t (text).")
+            sys.exit(1)
+        send_message(args.host, args.port, args.text, args.keyfile)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
