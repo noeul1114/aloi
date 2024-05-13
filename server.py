@@ -10,9 +10,9 @@ def handle_client(client_socket, key):
             message = client_socket.recv(1024)
             if not message:
                 break
-            print(f"Received encrypted message: {message}")
+            # print(f"Received encrypted message: {message}")
             decrypted_message = decrypt_message(message, key)
-            print(f"Decrypted message: {decrypted_message}")
+            print(f"Received decrypted message: {decrypted_message}")
     except Exception as e:
         print(f"Error handling client: {e}")
     finally:

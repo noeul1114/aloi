@@ -5,6 +5,7 @@ from server import start_server
 from client import send_message
 from encryption import generate_key, save_key
 
+
 def main():
     parser = argparse.ArgumentParser(description="1:1 Encrypted Communication Program")
     parser.add_argument("-m", "--mode", choices=["server", "client", "keygen"], help="Mode of operation")
@@ -31,6 +32,7 @@ def main():
             print("Client mode requires -H (host), -p (port), and -k (keyfile).")
             sys.exit(1)
         send_message(args.host, args.port, args.keyfile)
+
 
 if __name__ == "__main__":
     main()
